@@ -25,7 +25,7 @@ new WebSocketServer({server}).on("connection", (ws, req)=>{
   peers[req.url] = peers[req.url] || []
   peers[req.url].push(ws)
   peers[req.url].forEach( ws => ws.send(`{"peers": ${peers[req.url].length-1}}`))
-  console.log("ws connection open "+req.url, req.headers['x-forwarded-for'], )
+  console.log("ws connection open "+req.url, req.headers['x-forwarded-for'])
 
   ws.on("close", ()=>{
     peers[req.url] = peers[req.url].filter(i => i != ws)
@@ -33,7 +33,6 @@ new WebSocketServer({server}).on("connection", (ws, req)=>{
   })
   
   ws.on("message", (data)=>{
-    console.log('ws', (new Date).toISOString())
     peers[req.url].filter(i => i != ws).forEach( ws => ws.send(data))
   })
 })
