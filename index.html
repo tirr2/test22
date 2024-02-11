@@ -2,7 +2,7 @@
 
 <style>
   html,body{margin:0;}
-  video{width:100vw;}
+  video{width:100vw;height:100vh;object-fit:cover;}
   form{
     position:fixed;
     width:100vw;
@@ -72,7 +72,7 @@
       }
     
       let data = JSON.parse(event.data)
-      if(data.reset) return initStream()           
+      if(data.resetFont) return initStream()           
     });
     
   }
