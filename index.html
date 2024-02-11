@@ -1,0 +1,126 @@
+<title>stream 0</title>
+
+<style>
+  html,body{margin:0;}
+  video{width:100vw;}
+  form{
+    position:fixed;
+    width:100vw;
+    height:100vh;
+    min-height:300px;
+    background:#EEE;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:999; 
+  }
+  form input, form button{
+    --webkit-appearance: none;
+    padding:20px;
+    font-size:25px;
+    background:#FFF;
+    color:#999;
+    border:5px solid #DDD;
+    margin:0 5px;
+    display:block;
+    outline:none;
+    border-radius:20px;
+    text-align:center;
+  }
+
+</style>
+
+<form id="codeForm">
+  <input placeholder="room id" id="code" autofocus> 
+  <button type="submit">open</button>
+</form>
+
+<video id="vid1" controls></video>
+
+<script>
+
+  const SERV_ADDR = 'wss://'+location.host
+  
+  let $vid = document.querySelector("#vid1")  
+  let sourceBuffer;
+  let codec = 'video/webm;codecs=vp8'
+  let queue = []
+  let ws
+
+  const init = (code)=>{
+    
+    ws = new WebSocket(SERV_ADDR+"/?code="+code);
+    
+    ws.binaryType = "arraybuffer";
+    
+    ws.addEventListener("open", (event) => {
+      ws.send(JSON.stringify({reset: true, ww:1}));
+    });
+    
+    ws.addEventListener("close", async (event) => {
+      await new Promise(r => setTimeout(r, 1500))
+      console.log('ws closed')
+      init(code)
+    });
+  
+    ws.addEventListener("message", (event) => {
+      //console.log("in: ", event.data);
+      if(event.data instanceof ArrayBuffer){
+       queue.push(event.data)   
+       processQueue();  
+       return
+      }
+    
+      let data = JSON.parse(event.data)
+      if(data.reset) return initStream()           
+    });
+    
+  }
+  
+  const initStream = ()=>{
+
+    let mediaSource = new MediaSource();
+    mediaSource.addEventListener('sourceopen', args => {
+      queue = [];
+      sourceBuffer = mediaSource.addSourceBuffer(codec);
+      sourceBuffer.addEventListener("updateend", () => {
+        $vid.play();
+        processQueue();
+      });
+      //sourceBuffer.addEventListener('error', e => ws.send(JSON.stringify({reset: true}));
+      processQueue(); 
+    });
+    
+    $vid.src = URL.createObjectURL(mediaSource);
+  }
+  
+  const processQueue = ()=>{
+    if(!sourceBuffer || !queue.length || sourceBuffer.updating) return;
+    let data = queue.shift()
+    sourceBuffer.appendBuffer(data)
+    processQueue()
+  }
+      
+  ////////////////
+  
+  let $code = document.querySelector("#code")
+  code.value = location.hash.replace('#', '')
+
+  document.querySelector("#codeForm").addEventListener('submit', (e)=>{
+    e.preventDefault();
+    e.currentTarget.style.display='none';
+    init($code.value)
+  });
+  
+  
+  let _lastTime = -1
+  setInterval(()=>{ //detect broken vid
+    if($vid.currentTime == _lastTime){
+      _lastTime = -1
+      console.log('stuck')
+      return ws.send(JSON.stringify({reset: true}));
+    }
+    _lastTime = $vid.currentTime
+  }, 6000)
+    
+</script>
