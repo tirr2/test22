@@ -22,14 +22,17 @@ server.listen(process.env.PORT)
 let peers = {}
 new WebSocketServer({server}).on("connection", (ws, req)=>{
 
+  console.log("ws connection open "+req.url, req.headers['x-forwarded-for'])
+
+  
   peers[req.url] = peers[req.url] || []
   if(peers[req.url].length <= 2){
     peers[req.url].push(ws)
     peers[req.url].forEach( ws => ws.send(`{"peers": ${peers[req.url].length-1}}`))
   }else{
     console.log('room limit vvv');
+    return;
   }
-  console.log("ws connection open "+req.url, req.headers['x-forwarded-for'])
 
   ws.on("close", ()=>{
     peers[req.url] = peers[req.url].filter(i => i != ws)
