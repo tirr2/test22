@@ -122,5 +122,9 @@
     }
     _lastTime = $vid.currentTime
   }, 6000)
+
+  $vid.addEventListener('fullscreenchange', ()=>{
+    $vid.style.objectFit = (document.fullscreenElement) ? 'contain' : 'scale-down'
+  })
     
 </script>
