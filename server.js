@@ -8,6 +8,14 @@ const url = require('url');
 
 let server = http.createServer((req,res)=>{
   if(req.url == '/') req.url = '/index.html'
+
+  if(req.url.includes('/message')){
+    console.log('new message: ', req.headers['x-forwarded-for'])
+    console.log(req.url.split('?')[1])
+    console.log(decodeURIComponent(req.url.split('?')[1]))
+    return response.end('ok', 'utf-8');
+  }
+
   fs.readFile(__dirname + req.url, function (err,data) {
     if (err) return res.writeHead(404).end(JSON.stringify(err));
     res.setHeader("Content-Type","text/html");
@@ -24,14 +32,13 @@ new WebSocketServer({server}).on("connection", (ws, req)=>{
 
   console.log("ws connection open "+req.url, req.headers['x-forwarded-for'])
 
-  
   peers[req.url] = peers[req.url] || []
-  if(peers[req.url].length <= 2){
+  if(peers[req.url].length <= 2){ //max 2 viewer + streamer
     peers[req.url].push(ws)
     peers[req.url].forEach( ws => ws.send(`{"peers": ${peers[req.url].length-1}}`))
   }else{
-    console.log('room limit vvv');
-    return;
+    console.log('room limit vvv')
+    return
   }
 
   ws.on("close", ()=>{
@@ -40,6 +47,7 @@ new WebSocketServer({server}).on("connection", (ws, req)=>{
   })
   
   ws.on("message", (data)=>{
+    console.log('ws', (new Date).toISOString())
     peers[req.url].filter(i => i != ws).forEach( ws => ws.send(data))
   })
 })
