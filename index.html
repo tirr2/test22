@@ -2,7 +2,12 @@
 
 <style>
   html,body{margin:0;}
-  video{width:100vw;height:100vh;object-fit:scale-down;background:#222;}
+  video{
+    width:100vw;
+    height: 100vh;
+    background: #333;
+    object-fit: scale-down;
+  }
   form{
     position:fixed;
     width:100vw;
@@ -16,23 +21,52 @@
   }
   form input, form button{
     --webkit-appearance: none;
-    padding:20px;
+    padding:20px 40px;
     font-size:25px;
     background:#FFF;
     color:#999;
-    border:5px solid #DDD;
-    margin:0 5px;
+    border:0;
+    margin:0 9px;
     display:block;
     outline:none;
     border-radius:20px;
     text-align:center;
+    box-shadow: 0px -1px 30px 0px #c9c9c9;
+  }
+  form input{
+    width:350px;
+  }
+  input::placeholder{
+    color:#AAA;
+  }
+  form .msg-wrap{
+    position:absolute;
+    width:100%;
+    justify-content:center;
+    bottom:20px;
+    display:flex;
+  }
+  form .msg-wrap > *{
+    font-size:12px;
+    margin:0 4px;
+    padding:6px 12px;
+    border-radius:5px;
+    background:#FFFFFF88;
+    box-shadow:none;
+  }
+  form .msg-wrap input{
+    width:150px
   }
 
 </style>
 
 <form id="codeForm">
-  <input placeholder="room id" id="code" autofocus> 
-  <button type="submit">open</button>
+  <input placeholder="room" id="code" type="hidden">
+  <button type="submit">play</button>
+  <div class="msg-wrap">
+    <input id="message" placeholder="message">
+    <button type="button" id="sendMsg">send</button>
+  </div>
 </form>
 
 <video id="vid1" controls></video>
@@ -40,7 +74,7 @@
 <script>
 
   const SERV_ADDR = 'wss://'+location.host
-  
+
   let $vid = document.querySelector("#vid1")  
   let sourceBuffer;
   let codec = 'video/webm;codecs=vp8,opus'
@@ -54,7 +88,7 @@
     ws.binaryType = "arraybuffer";
     
     ws.addEventListener("open", (event) => {
-      ws.send(JSON.stringify({reset: true, ww:1}));
+      ws.send(JSON.stringify({resetReq: true}));
     });
     
     ws.addEventListener("close", async (event) => {
@@ -72,7 +106,7 @@
       }
     
       let data = JSON.parse(event.data)
-      if(data.resetFront) return initStream()           
+      if(data.reset) return initStream()
     });
     
   }
@@ -90,7 +124,7 @@
       //sourceBuffer.addEventListener('error', e => ws.send(JSON.stringify({reset: true}));
       processQueue(); 
     });
-    
+
     $vid.src = URL.createObjectURL(mediaSource);
   }
   
@@ -111,6 +145,13 @@
     e.currentTarget.style.display='none';
     init($code.value)
   });
+  document.querySelector("#sendMsg").addEventListener('click', (e)=>{
+    let $msg = document.querySelector("#message")
+    if(!$msg.value) return
+    fetch('/message?'+encodeURIComponent(location.hash+": "+$msg.value))
+    $msg.value = ''
+    e.preventDefault()
+  });
   
   
   let _lastTime = -1
@@ -118,7 +159,7 @@
     if($vid.currentTime == _lastTime){
       _lastTime = -1
       console.log('stuck')
-      return ws.send(JSON.stringify({reset: true}));
+      return ws.send(JSON.stringify({resetReq: true}));
     }
     _lastTime = $vid.currentTime
   }, 6000)
