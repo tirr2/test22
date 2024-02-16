@@ -13,7 +13,7 @@ let server = http.createServer((req,res)=>{
     console.log('new message: ', req.headers['x-forwarded-for'])
     console.log(req.url.split('?')[1])
     console.log(decodeURIComponent(req.url.split('?')[1]))
-    return response.end('ok', 'utf-8');
+    return res.end('ok', 'utf-8');
   }
 
   fs.readFile(__dirname + req.url, function (err,data) {
