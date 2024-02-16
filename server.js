@@ -47,7 +47,6 @@ new WebSocketServer({server}).on("connection", (ws, req)=>{
   })
   
   ws.on("message", (data)=>{
-    console.log('ws', (new Date).toISOString())
     peers[req.url].filter(i => i != ws).forEach( ws => ws.send(data))
   })
 })
